@@ -1,0 +1,17 @@
+---
+language: go
+go: [ 1.11.x ]
+jobs:
+  include:
+    - name: go default
+    - name: golangci-lint
+      install: go get github.com/golangci/golangci-lint/cmd/golangci-lint
+      script: golangci-lint run
+    - name: gofmt
+      script:
+          - gofmt -d -e *.go | tee /tmp/gofmt.txt
+          - if test -s /tmp/gofmt.txt; then echo gofmt error; false; fi
+    - name: omnilint
+      language: generic
+      install: docker pull lpenz/omnilint
+      script: docker run --rm -v "$PWD:$PWD" -e "RWD=$PWD" -e "MY_UID=$UID" lpenz/omnilint
