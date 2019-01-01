@@ -9,8 +9,13 @@ jobs:
       script: golangci-lint run --enable-all
     - name: gofmt
       script:
-          - gofmt -d -e *.go | tee /tmp/gofmt.txt
-          - if test -s /tmp/gofmt.txt; then echo gofmt error; false; fi
+        - gofmt -d -e *.go | tee /tmp/gofmt.txt
+        - if test -s /tmp/gofmt.txt; then echo gofmt error; false; fi
+    - name: gometalinter
+      script:
+        - go get -u github.com/alecthomas/gometalinter
+        - gometalinter --install
+        - gometalinter ./...
     - name: omnilint
       language: generic
       install: docker pull lpenz/omnilint
