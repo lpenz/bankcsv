@@ -185,7 +185,12 @@ func processCsvs(srcAccount *string, jsonName *string, outputName *string, input
 		if err != nil {
 			log.Fatal("Error creating file", err)
 		}
-		defer outFd.Close()
+		defer func() {
+			err := outFd.Close()
+			if err != nil {
+				log.Panicf("error closing %s: %s", *outputName, err)
+			}
+		}()
 	}
 	o := outputCsvFormat{}
 	o.Init(outFd)
@@ -193,7 +198,10 @@ func processCsvs(srcAccount *string, jsonName *string, outputName *string, input
 		t.SrcAccount = *srcAccount
 		found := false
 		for _, descAcc := range cfg.AccountFromDescription {
-			match, _ := regexp.MatchString(descAcc.Regex, t.Description)
+			match, err := regexp.MatchString(descAcc.Regex, t.Description)
+			if err != nil {
+				log.Panicf("error in MatchString: %s", err)
+			}
 			if match {
 				t.Account = descAcc.Account
 				found = true
