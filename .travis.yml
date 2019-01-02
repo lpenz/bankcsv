@@ -6,7 +6,7 @@ jobs:
     - name: go default
     - name: golangci-lint
       install: go get github.com/golangci/golangci-lint/cmd/golangci-lint
-      script: golangci-lint run
+      script: golangci-lint run --enable-all
     - name: gofmt
       script:
           - gofmt -d -e *.go | tee /tmp/gofmt.txt
