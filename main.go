@@ -21,8 +21,8 @@ import (
 
 // Base types:
 
-type Transaction struct {
-	Id          string
+type transaction struct {
+	ID          string
 	Date        time.Time
 	Description string
 	Value       string
@@ -32,18 +32,18 @@ type Transaction struct {
 
 // json config parsing: ///////////////////////////////////////////////////////
 
-type Config struct {
-	AccountFromDescription []AccountFromDescription
+type config struct {
+	AccountFromDescription []accountFromDescription
 }
 
-type AccountFromDescription struct {
+type accountFromDescription struct {
 	Account string
 	Regex   string
 }
 
-func configFromJson(jsonName *string) (Config, error) {
+func configFromJSON(jsonName *string) (config, error) {
 	dat, err := ioutil.ReadFile(*jsonName)
-	var cfg Config
+	var cfg config
 	if err != nil {
 		return cfg, err
 	}
@@ -57,12 +57,12 @@ func configFromJson(jsonName *string) (Config, error) {
 
 // CSV:
 
-type OutputCsvFormat struct {
+type outputCsvFormat struct {
 	outFd  *os.File
 	outCsv *csv.Writer
 }
 
-func (o *OutputCsvFormat) Init(outFd *os.File) {
+func (o *outputCsvFormat) Init(outFd *os.File) {
 	o.outFd = outFd
 	_, err := outFd.WriteString("\"id\",\"date\",\"description\",\"withdrawal\",\"account\"\n")
 	if err != nil {
@@ -71,9 +71,9 @@ func (o *OutputCsvFormat) Init(outFd *os.File) {
 	o.outCsv = csv.NewWriter(outFd)
 }
 
-func (o *OutputCsvFormat) Add(t *Transaction) {
+func (o *outputCsvFormat) Add(t *transaction) {
 	date := t.Date.Format("2006-01-02")
-	src := []string{t.Id, date, t.Description, t.Value, t.SrcAccount}
+	src := []string{t.ID, date, t.Description, t.Value, t.SrcAccount}
 	if err := o.outCsv.Write(src); err != nil {
 		log.Fatalln("error writing src record to csv:", err)
 	}
@@ -92,7 +92,7 @@ func (o *OutputCsvFormat) Add(t *Transaction) {
 
 }
 
-func (o *OutputCsvFormat) Finish() {
+func (o *outputCsvFormat) Finish() {
 	o.outCsv.Flush()
 	if err := o.outCsv.Error(); err != nil {
 		log.Fatal(err)
@@ -101,8 +101,8 @@ func (o *OutputCsvFormat) Finish() {
 
 // parser: ////////////////////////////////////////////////////////////////////
 
-func inputsParse(inputNames []string) <-chan *Transaction {
-	out := make(chan *Transaction)
+func inputsParse(inputNames []string) <-chan *transaction {
+	out := make(chan *transaction)
 	go func() {
 		defer close(out)
 		lastdate := time.Now()
@@ -155,14 +155,14 @@ func inputsParse(inputNames []string) <-chan *Transaction {
 						value = "-" + strings.TrimSpace(line[6])
 					}
 				}
-				t := Transaction{
-					Id:          fmt.Sprintf("%04d%02d%02d%02d", year, month, day, counter),
+				t := transaction{
+					ID:          fmt.Sprintf("%04d%02d%02d%02d", year, month, day, counter),
 					Date:        date,
 					Description: line[2],
 					Value:       value,
 				}
 				out <- &t
-				counter += 1
+				counter++
 			}
 		}
 	}()
@@ -172,7 +172,7 @@ func inputsParse(inputNames []string) <-chan *Transaction {
 // processor //////////////////////////////////////////////////////////////////
 
 func processCsvs(srcAccount *string, jsonName *string, outputName *string, inputNames []string) {
-	cfg, err := configFromJson(jsonName)
+	cfg, err := configFromJSON(jsonName)
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +187,7 @@ func processCsvs(srcAccount *string, jsonName *string, outputName *string, input
 		}
 		defer outFd.Close()
 	}
-	o := OutputCsvFormat{}
+	o := outputCsvFormat{}
 	o.Init(outFd)
 	for t := range inputsParse(inputNames) {
 		t.SrcAccount = *srcAccount
@@ -212,8 +212,8 @@ func main() {
 	outputName := flag.String("o", "-", "output file")
 	flag.Parse()
 	if flag.NArg() != 3 {
-		fmt.Fprintf(os.Stderr, "Wrong number of arguments\n")
-		fmt.Fprintf(os.Stderr, "Usage: bankcsv <srcAccount> <json config file> <inputs...>\n")
+		fmt.Fprintf(os.Stderr, "Wrong number of arguments\n")                                  // nolint: errcheck
+		fmt.Fprintf(os.Stderr, "Usage: bankcsv <srcAccount> <json config file> <inputs...>\n") // nolint: errcheck
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
