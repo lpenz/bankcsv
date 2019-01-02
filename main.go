@@ -101,6 +101,46 @@ func (o *outputCsvFormat) Finish() {
 
 // parser: ////////////////////////////////////////////////////////////////////
 
+func ymdParse(line string, lastdate *time.Time, counter *int) (time.Time, int, time.Month, int) {
+	date, err := time.Parse("02/01/2006", line)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if date != *lastdate {
+		*counter = 1
+		*lastdate = date
+	}
+	y, m, d := date.Date()
+	return date, y, m, d
+}
+
+func valueParse(line []string, iscredit bool) (value string) {
+	if iscredit {
+		value = strings.TrimSpace(line[3])
+	} else {
+		value = strings.TrimSpace(line[5])
+	}
+	if value == "0.00" || value == "" {
+		if iscredit {
+			value = "-" + strings.TrimSpace(line[4])
+		} else {
+			value = "-" + strings.TrimSpace(line[6])
+		}
+	}
+	return value
+}
+
+func lineParse(line []string, iscredit bool, lastdate *time.Time, counter *int) transaction {
+	date, year, month, day := ymdParse(line[1], lastdate, counter)
+	value := valueParse(line, iscredit)
+	return transaction{
+		ID:          fmt.Sprintf("%04d%02d%02d%02d", year, month, day, *counter),
+		Date:        date,
+		Description: line[2],
+		Value:       value,
+	}
+}
+
 func inputsParse(inputNames []string) <-chan *transaction {
 	out := make(chan *transaction)
 	go func() {
@@ -114,7 +154,7 @@ func inputsParse(inputNames []string) <-chan *transaction {
 			}
 			inputBuf := bufio.NewReader(inputFd)
 			inputCsv := csv.NewReader(inputBuf)
-			inputFmt := ""
+			var iscredit bool
 			for {
 				line, err := inputCsv.Read()
 				if err == io.EOF {
@@ -123,44 +163,17 @@ func inputsParse(inputNames []string) <-chan *transaction {
 					log.Fatal(err)
 				}
 				if line[1] == " Posted Transactions Date" {
-					if line[0] == "Masked Card Number" {
-						inputFmt = "credit"
-					} else if line[0] == "Posted Account" {
-						inputFmt = "debit"
-					} else {
+					switch line[0] {
+					case "Masked Card Number":
+						iscredit = true
+					case "Posted Account":
+						iscredit = false // "debit"
+					default:
 						log.Panicf("unknown input format for %s", inputName)
 					}
 					continue
 				}
-				var date time.Time
-				date, err = time.Parse("02/01/2006", line[1])
-				if err != nil {
-					log.Fatal(err)
-				}
-				if date != lastdate {
-					counter = 1
-					lastdate = date
-				}
-				year, month, day := date.Date()
-				var value string
-				if inputFmt == "credit" {
-					value = strings.TrimSpace(line[3])
-				} else {
-					value = strings.TrimSpace(line[5])
-				}
-				if value == "0.00" || value == "" {
-					if inputFmt == "credit" {
-						value = "-" + strings.TrimSpace(line[4])
-					} else {
-						value = "-" + strings.TrimSpace(line[6])
-					}
-				}
-				t := transaction{
-					ID:          fmt.Sprintf("%04d%02d%02d%02d", year, month, day, counter),
-					Date:        date,
-					Description: line[2],
-					Value:       value,
-				}
+				t := lineParse(line, iscredit, &lastdate, &counter)
 				out <- &t
 				counter++
 			}
