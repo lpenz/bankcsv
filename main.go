@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -148,7 +149,7 @@ func inputsParse(inputNames []string) <-chan *transaction {
 		lastdate := time.Now()
 		counter := 1
 		for _, inputName := range inputNames {
-			inputFd, err := os.Open(inputName)
+			inputFd, err := os.Open(filepath.Clean(inputName))
 			if err != nil {
 				log.Fatal(err)
 			}
