@@ -90,7 +90,6 @@ func (o *outputCsvFormat) Add(t *transaction) {
 			log.Fatalln("error writing dst record to csv:", err)
 		}
 	}
-
 }
 
 func (o *outputCsvFormat) Finish() {
