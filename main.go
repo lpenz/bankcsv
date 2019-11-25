@@ -232,11 +232,13 @@ func processCsvs(srcAccount *string, jsonName *string, outputName *string, input
 func main() {
 	outputName := flag.String("o", "-", "output file")
 	flag.Parse()
-	if flag.NArg() != 3 {
+	numArgs := 3
+	if flag.NArg() != numArgs {
 		fmt.Fprintf(os.Stderr, "Wrong number of arguments\n")                                  // nolint: errcheck
 		fmt.Fprintf(os.Stderr, "Usage: bankcsv <srcAccount> <json config file> <inputs...>\n") // nolint: errcheck
 		flag.PrintDefaults()
-		os.Exit(1)
+		exitError := 1
+		os.Exit(exitError)
 	}
 	args := flag.Args()
 	srcAccount := &args[0]
