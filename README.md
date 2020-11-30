@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/lpenz/bankcsv.png?branch=master)](https://travis-ci.com/lpenz/bankcsv)
+[![CI](https://github.com/lpenz/bankcsv/workflows/CI/badge.svg)](https://github.com/lpenz/bankcsv/actions)
 
 bankcsv
 =======
