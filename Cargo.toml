@@ -1,0 +1,21 @@
+[package]
+name = "bankcsv"
+description = "Process a bank CSV with data from a json to create a gnucash-compatible CSV"
+version = "0.1.0"
+authors = ["Leandro Lisboa Penz <lpenz@lpenz.org>"]
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/lpenz/bankcsv"
+repository = "https://github.com/lpenz/bankcsv"
+categories = ["command-line-utilities"]
+keywords = ["command-line"]
+
+[dependencies]
+clap = { version = "4.0", features = ["derive"] }
+csv = "1.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.5"
+chrono = "0.4"
+anyhow = "1.0"
