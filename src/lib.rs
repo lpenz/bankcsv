@@ -2,9 +2,9 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
-use anyhow::{Result, anyhow};
 use chrono::{Datelike, NaiveDate};
 use clap::Parser;
+use color_eyre::eyre::eyre;
 use csv::{ReaderBuilder, WriterBuilder};
 use regex::Regex;
 use serde::Deserialize;
@@ -71,6 +71,7 @@ fn value_parse(record: &csv::StringRecord, is_credit: bool) -> String {
 }
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
+    color_eyre::install()?;
     let args = Args::parse();
 
     // Read config
@@ -117,7 +118,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 match record.get(0) {
                     Some("Masked Card Number") => is_credit = true,
                     Some("Posted Account") => is_credit = false,
-                    _ => return Err(anyhow!("unknown input format for {:?}", input_path).into()),
+                    _ => return Err(eyre!("unknown input format for {:?}", input_path).into()),
                 }
                 continue;
             }
@@ -125,7 +126,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             let offset = if is_credit { 1 } else { 0 };
             let date_str = record
                 .get(1 + offset)
-                .ok_or_else(|| anyhow!("missing date field"))?;
+                .ok_or_else(|| eyre!("missing date field"))?;
 
             // Go's time.Parse("02/01/2006", line)
             // But wait, credit-cur.csv has "13:43, 28/08/2025" in column 1.
