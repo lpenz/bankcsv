@@ -65,7 +65,7 @@ type outputCsvFormat struct {
 
 func (o *outputCsvFormat) Init(outFd *os.File) {
 	o.outFd = outFd
-	_, err := outFd.WriteString("\"id\",\"date\",\"description\",\"withdrawal\",\"account\"\n")
+	_, err := outFd.WriteString("\"id\",\"date\",\"description\",\"amount\",\"value\",\"account\"\n")
 	if err != nil {
 		log.Fatalln("error writing csv header:", err)
 	}
@@ -74,7 +74,7 @@ func (o *outputCsvFormat) Init(outFd *os.File) {
 
 func (o *outputCsvFormat) Add(t *transaction) {
 	date := t.Date.Format("2006-01-02")
-	src := []string{t.ID, date, t.Description, t.Value, t.SrcAccount}
+	src := []string{t.ID, date, t.Description, t.Value, t.Value, t.SrcAccount}
 	if err := o.outCsv.Write(src); err != nil {
 		log.Fatalln("error writing src record to csv:", err)
 	}
@@ -85,7 +85,7 @@ func (o *outputCsvFormat) Add(t *transaction) {
 		} else {
 			value = fmt.Sprintf("-%s", t.Value)
 		}
-		dst := []string{"", "", "", value, t.Account}
+		dst := []string{t.ID, date, t.Description, value, value, t.Account}
 		if err := o.outCsv.Write(dst); err != nil {
 			log.Fatalln("error writing dst record to csv:", err)
 		}
@@ -116,13 +116,13 @@ func ymdParse(line string, lastdate *time.Time, counter *int) (time.Time, int, t
 
 func valueParse(line []string, iscredit bool) (value string) {
 	if iscredit {
-		value = strings.TrimSpace(line[3])
+		value = strings.TrimSpace(line[4])
 	} else {
 		value = strings.TrimSpace(line[5])
 	}
 	if value == "0.00" || value == "" {
 		if iscredit {
-			value = "-" + strings.TrimSpace(line[4])
+			value = "-" + strings.TrimSpace(line[5])
 		} else {
 			value = "-" + strings.TrimSpace(line[6])
 		}
@@ -131,12 +131,16 @@ func valueParse(line []string, iscredit bool) (value string) {
 }
 
 func lineParse(line []string, iscredit bool, lastdate *time.Time, counter *int) transaction {
-	date, year, month, day := ymdParse(line[1], lastdate, counter)
+	offset := 0
+	if iscredit {
+		offset = 1
+	}
+	date, year, month, day := ymdParse(line[1+offset], lastdate, counter)
 	value := valueParse(line, iscredit)
 	return transaction{
 		ID:          fmt.Sprintf("%04d%02d%02d%02d", year, month, day, *counter),
 		Date:        date,
-		Description: line[2],
+		Description: line[2+offset],
 		Value:       value,
 	}
 }
@@ -155,6 +159,7 @@ func inputsParse(inputNames []string) <-chan *transaction {
 			inputBuf := bufio.NewReader(inputFd)
 			inputCsv := csv.NewReader(inputBuf)
 			var iscredit bool
+			firstline := true
 			for {
 				line, err := inputCsv.Read()
 				if err == io.EOF {
@@ -162,7 +167,8 @@ func inputsParse(inputNames []string) <-chan *transaction {
 				} else if err != nil {
 					log.Fatal(err)
 				}
-				if line[1] == " Posted Transactions Date" {
+				if firstline {
+					firstline = false
 					switch line[0] {
 					case "Masked Card Number":
 						iscredit = true
