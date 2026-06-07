@@ -2,14 +2,16 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
-use chrono::{Datelike, NaiveDate};
+mod csvparser;
+mod transaction;
+
 use clap::Parser;
-use color_eyre::eyre::eyre;
-use csv::{ReaderBuilder, WriterBuilder};
+use color_eyre::eyre::Result;
+use csv::WriterBuilder;
 use regex::Regex;
 use serde::Deserialize;
 use std::fs::File;
-use std::io::{self, BufReader, Write};
+use std::io::{self, Write};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -43,33 +45,6 @@ struct AccountFromDescription {
     regex: String,
 }
 
-struct Transaction {
-    id: String,
-    date: NaiveDate,
-    description: String,
-    value: String,
-    src_account: String,
-    account: Option<String>,
-}
-
-fn value_parse(record: &csv::StringRecord, is_credit: bool) -> String {
-    let val = if is_credit {
-        record.get(4).unwrap_or("").trim()
-    } else {
-        record.get(5).unwrap_or("").trim()
-    };
-
-    if val == "0.00" || val.is_empty() {
-        if is_credit {
-            format!("-{}", record.get(5).unwrap_or("").trim())
-        } else {
-            format!("-{}", record.get(6).unwrap_or("").trim())
-        }
-    } else {
-        val.to_string()
-    }
-}
-
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
     let args = Args::parse();
@@ -99,68 +74,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Write header
     csv_writer.write_record(["id", "date", "description", "amount", "value", "account"])?;
 
-    let mut last_date: Option<NaiveDate> = None;
-    let mut counter = 1;
+    let parser = csvparser::Parser::new(args.src_account.clone());
 
     for input_path in args.inputs {
-        let file = File::open(&input_path)?;
-        let mut rdr = ReaderBuilder::new()
-            .has_headers(false)
-            .from_reader(BufReader::new(file));
-
-        let mut is_credit = false;
-        let mut first_line = true;
-
-        for result in rdr.records() {
-            let record = result?;
-            if first_line {
-                first_line = false;
-                match record.get(0) {
-                    Some("Masked Card Number") => is_credit = true,
-                    Some("Posted Account") => is_credit = false,
-                    _ => return Err(eyre!("unknown input format for {:?}", input_path).into()),
-                }
-                continue;
-            }
-
-            let offset = if is_credit { 1 } else { 0 };
-            let date_str = record
-                .get(1 + offset)
-                .ok_or_else(|| eyre!("missing date field"))?;
-
-            // Go's time.Parse("02/01/2006", line)
-            // But wait, credit-cur.csv has "13:43, 28/08/2025" in column 1.
-            // Go code uses line[1+offset].
-            // For credit, offset=1, so line[2].
-            // line[2] in credit-cur.csv is "Processed" date: "29/08/2025".
-            // For debit, offset=0, so line[1].
-            // line[1] in debit-cur.csv is "Posted Transactions Date": "01/07/2025".
-
-            let date = NaiveDate::parse_from_str(date_str, "%d/%m/%Y")?;
-
-            if Some(date) != last_date {
-                counter = 1;
-                last_date = Some(date);
-            }
-
-            let id = format!(
-                "{}{:02}{:02}{:02}",
-                date.year(),
-                date.month(),
-                date.day(),
-                counter
-            );
-            let description = record.get(2 + offset).unwrap_or("").to_string();
-            let value = value_parse(&record, is_credit);
-
-            let mut t = Transaction {
-                id,
-                date,
-                description,
-                value,
-                src_account: args.src_account.clone(),
-                account: None,
-            };
+        let content = std::fs::read_to_string(&input_path)?;
+        for result in parser.parse_str(&content)? {
+            let mut t = result?;
 
             for (re, account) in &rules {
                 if re.is_match(&t.description) {
@@ -200,8 +119,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 eprintln!("could not assign account to {}", t.description);
             }
-
-            counter += 1;
         }
     }
 
