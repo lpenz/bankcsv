@@ -70,7 +70,7 @@ fn value_parse(record: &csv::StringRecord, is_credit: bool) -> String {
     }
 }
 
-fn main() -> Result<()> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     // Read config
@@ -117,7 +117,7 @@ fn main() -> Result<()> {
                 match record.get(0) {
                     Some("Masked Card Number") => is_credit = true,
                     Some("Posted Account") => is_credit = false,
-                    _ => return Err(anyhow!("unknown input format for {:?}", input_path)),
+                    _ => return Err(anyhow!("unknown input format for {:?}", input_path).into()),
                 }
                 continue;
             }
