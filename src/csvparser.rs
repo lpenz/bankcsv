@@ -92,3 +92,62 @@ fn value_parse(record: &csv::StringRecord, is_credit: bool) -> String {
         val.to_string()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_credit() -> Result<()> {
+        let content = "Masked Card Number, Transaction date/time, Processed, Description, Paid out, Paid in, Posted Currency, Transaction Type, Category
+0000 **** **** 0000,\"00:00, 11/01/2026\",\"12/01/2026\",\"DIRECT DEBIT\",\"\",\"2113.05\",\"EUR\",\"Bill Payment\",\"\"
+0000 **** **** 0000,\"12:10, 08/01/2026\",\"09/01/2026\",\"MERCHANT 1\",\"9.95\",\"\",\"EUR\",\"Purchase\",\"Leisure & Entertainment\"";
+        let parser = Parser::new("test_account".to_string());
+        let transactions: Vec<_> = parser.parse_str(content)?.collect::<Result<Vec<_>>>()?;
+
+        assert_eq!(transactions.len(), 2);
+
+        assert_eq!(
+            transactions[0].date,
+            NaiveDate::from_ymd_opt(2026, 1, 12).unwrap()
+        );
+        assert_eq!(transactions[0].description, "DIRECT DEBIT");
+        assert_eq!(transactions[0].value, "-2113.05");
+
+        assert_eq!(
+            transactions[1].date,
+            NaiveDate::from_ymd_opt(2026, 1, 9).unwrap()
+        );
+        assert_eq!(transactions[1].description, "MERCHANT 1");
+        assert_eq!(transactions[1].value, "9.95");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_debit() -> Result<()> {
+        let content = "Posted Account, Posted Transactions Date, Description1, Description2, Description3, Debit Amount, Credit Amount,Balance,Posted Currency,Transaction Type,Local Currency Amount,Local Currency
+\"000000 - 00000000\",\"03/03/2025\",\"MERCHANT 2\",\"\",\"\",\"50.00\",,\"20302.92\",EUR,\"Debit\",\" 50.00\",EUR
+\"000000 - 00000000\",\"26/03/2025\",\"ZZ00000000000000\",\"PERSON NAME\",\"\",,\"14,649.77\",\"19519.71\",EUR,\"Credit\",\" 14,649.77\",EUR";
+        let parser = Parser::new("test_account".to_string());
+        let transactions: Vec<_> = parser.parse_str(content)?.collect::<Result<Vec<_>>>()?;
+
+        assert_eq!(transactions.len(), 2);
+
+        assert_eq!(
+            transactions[0].date,
+            NaiveDate::from_ymd_opt(2025, 3, 3).unwrap()
+        );
+        assert_eq!(transactions[0].description, "MERCHANT 2");
+        assert_eq!(transactions[0].value, "50.00");
+
+        assert_eq!(
+            transactions[1].date,
+            NaiveDate::from_ymd_opt(2025, 3, 26).unwrap()
+        );
+        assert_eq!(transactions[1].description, "ZZ00000000000000");
+        assert_eq!(transactions[1].value, "-14,649.77");
+
+        Ok(())
+    }
+}
