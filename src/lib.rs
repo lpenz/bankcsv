@@ -6,7 +6,7 @@
 
 mod accounts;
 mod cli;
-mod csvparser;
+mod input;
 mod output;
 mod transaction;
 
@@ -39,7 +39,7 @@ pub fn bankcsv(args: cli::Args) -> Result<()> {
 
     let mut output = output::Output::new(writer)?;
 
-    let parser = csvparser::Parser::new(args.src_account.clone());
+    let parser = input::Parser::new(args.src_account.clone());
 
     for input_path in args.inputs {
         let content = std::fs::read_to_string(&input_path)?;
