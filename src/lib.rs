@@ -2,6 +2,7 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+mod cli;
 mod csvparser;
 mod transaction;
 
@@ -12,24 +13,6 @@ use regex::Regex;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::{self, Write};
-use std::path::PathBuf;
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Source account
-    src_account: String,
-
-    /// JSON config file
-    config_file: PathBuf,
-
-    /// Input bank CSV files
-    inputs: Vec<PathBuf>,
-
-    /// Output file
-    #[arg(short, long, default_value = "-")]
-    output: String,
-}
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -47,7 +30,7 @@ struct AccountFromDescription {
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
-    let args = Args::parse();
+    let args = cli::Args::parse();
 
     // Read config
     let config_content = std::fs::read_to_string(&args.config_file)?;
