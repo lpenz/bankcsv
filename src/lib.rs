@@ -16,7 +16,11 @@ use std::io::{self, Write};
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
     let args = cli::Args::parse();
+    bankcsv(args)?;
+    Ok(())
+}
 
+fn bankcsv(args: cli::Args) -> Result<()> {
     // Read config
     let accounts = accounts::Accounts::from_file(&args.config_file)?;
 
@@ -53,4 +57,58 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     output.flush()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_bankcsv_integration() -> Result<(), Box<dyn std::error::Error>> {
+        let dir = std::env::temp_dir().join("bankcsv_test_integration");
+        if dir.exists() {
+            fs::remove_dir_all(&dir)?;
+        }
+        fs::create_dir_all(&dir)?;
+
+        let config_file = dir.join("config.json");
+        fs::write(
+            &config_file,
+            r#"{
+            "AccountFromDescription": [
+                { "Account": "Assets:Checking", "Regex": "MERCHANT 1" }
+            ]
+        }"#,
+        )?;
+
+        let input_file = dir.join("input.csv");
+        fs::write(
+            &input_file,
+            "Masked Card Number, Transaction date/time, Processed, Description, Paid out, Paid in, Posted Currency, Transaction Type, Category
+0000 **** **** 0000,\"12:10, 08/01/2026\",\"09/01/2026\",\"MERCHANT 1\",\"9.95\",\"\",\"EUR\",\"Purchase\",\"Leisure & Entertainment\"",
+        )?;
+
+        let output_file = dir.join("output.csv");
+
+        let args = cli::Args {
+            src_account: "Liabilities:CreditCard".to_string(),
+            config_file: config_file.clone(),
+            inputs: vec![input_file.clone()],
+            output: output_file.to_str().unwrap().to_string(),
+        };
+
+        bankcsv(args)?;
+
+        let output_content = fs::read_to_string(&output_file)?;
+        assert!(output_content.contains(
+            "\"2026010901\",\"2026-01-09\",\"MERCHANT 1\",\"9.95\",\"9.95\",\"Liabilities:CreditCard\""
+        ));
+        assert!(output_content.contains(
+            "\"2026010901\",\"2026-01-09\",\"MERCHANT 1\",\"-9.95\",\"-9.95\",\"Assets:Checking\""
+        ));
+
+        fs::remove_dir_all(&dir)?;
+        Ok(())
+    }
 }
