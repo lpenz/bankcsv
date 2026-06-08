@@ -2,6 +2,7 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+mod accounts;
 mod cli;
 mod csvparser;
 mod transaction;
@@ -9,39 +10,15 @@ mod transaction;
 use clap::Parser;
 use color_eyre::eyre::Result;
 use csv::WriterBuilder;
-use regex::Regex;
-use serde::Deserialize;
 use std::fs::File;
 use std::io::{self, Write};
-
-#[derive(Debug, Deserialize)]
-struct Config {
-    #[serde(rename = "AccountFromDescription")]
-    account_from_description: Vec<AccountFromDescription>,
-}
-
-#[derive(Debug, Deserialize)]
-struct AccountFromDescription {
-    #[serde(rename = "Account")]
-    account: String,
-    #[serde(rename = "Regex")]
-    regex: String,
-}
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
     let args = cli::Args::parse();
 
     // Read config
-    let config_content = std::fs::read_to_string(&args.config_file)?;
-    let config: Config = serde_json::from_str(&config_content)?;
-
-    // Compile regexes
-    let mut rules = Vec::new();
-    for rule in config.account_from_description {
-        let re = Regex::new(&rule.regex)?;
-        rules.push((re, rule.account));
-    }
+    let accounts = accounts::Accounts::from_file(&args.config_file)?;
 
     // Prepare output
     let mut writer: Box<dyn Write> = if args.output == "-" {
@@ -64,7 +41,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         for result in parser.parse_str(&content)? {
             let mut t = result?;
 
-            for (re, account) in &rules {
+            for (re, account) in &accounts.rules {
                 if re.is_match(&t.description) {
                     t.account = Some(account.clone());
                     break;
