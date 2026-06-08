@@ -2,6 +2,8 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+//! Main library module for bankcsv.
+
 mod accounts;
 mod cli;
 mod csvparser;
@@ -13,6 +15,8 @@ use color_eyre::eyre::Result;
 use std::fs::File;
 use std::io::{self, Write};
 
+/// Entry point for the bankcsv application.
+/// Initializes error handling, parses CLI arguments, and starts the processing.
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
     let args = cli::Args::parse();
@@ -20,7 +24,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn bankcsv(args: cli::Args) -> Result<()> {
+/// Core logic of bankcsv.
+/// Processes input CSV files using the provided configuration and writes the output.
+pub fn bankcsv(args: cli::Args) -> Result<()> {
     // Read config
     let accounts = accounts::Accounts::from_file(&args.config_file)?;
 

@@ -2,17 +2,21 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+//! Account configuration management.
+
 use color_eyre::eyre::Result;
 use regex::Regex;
 use serde::Deserialize;
 use std::path::Path;
 
+/// Configuration structure for deserializing from JSON.
 #[derive(Debug, Deserialize)]
 struct Config {
     #[serde(rename = "AccountFromDescription")]
     account_from_description: Vec<AccountFromDescription>,
 }
 
+/// A single rule mapping a description regex to an account.
 #[derive(Debug, Deserialize)]
 struct AccountFromDescription {
     #[serde(rename = "Account")]
@@ -21,16 +25,20 @@ struct AccountFromDescription {
     regex: String,
 }
 
+/// Holds the compiled account assignment rules.
 pub struct Accounts {
+    /// List of compiled regexes and their corresponding accounts.
     pub rules: Vec<(Regex, String)>,
 }
 
 impl Accounts {
+    /// Loads account rules from a JSON file.
     pub fn from_file(path: &Path) -> Result<Self> {
         let config_content = std::fs::read_to_string(path)?;
         Self::from_str(&config_content)
     }
 
+    /// Loads account rules from a JSON string.
     pub fn from_str(content: &str) -> Result<Self> {
         let config: Config = serde_json::from_str(content)?;
 

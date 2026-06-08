@@ -2,16 +2,18 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+//! Command-line interface definition.
+
 use clap::{Parser, ValueHint};
 use std::path::PathBuf;
 
-/// bankcsv converts bank CSV files to a common format
+/// Convert bank CSV files to GnuCash-compatible format using JSON-based rules
 #[derive(Parser, Debug)]
 #[command(
     author,
     version,
     about,
-    long_about = "bankcsv converts bank CSV files to a common format, using a JSON configuration file to assign accounts based on descriptions."
+    long_about = "bankcsv processes bank transaction exports and generates a CSV format suitable for GnuCash import. It leverages a JSON configuration file to map transaction descriptions to specific accounts using regular expressions, enabling automated categorization of your financial data."
 )]
 pub struct Args {
     /// Source account

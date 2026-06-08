@@ -2,16 +2,20 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+//! Output writing module.
+
 use crate::transaction::Transaction;
 use color_eyre::eyre::Result;
 use csv::Writer;
 use std::io::Write;
 
+/// Manages the writing of transactions to a CSV file.
 pub struct Output<W: Write> {
     csv_writer: Writer<W>,
 }
 
 impl<W: Write> Output<W> {
+    /// Creates a new Output instance and writes the CSV header.
     pub fn new(writer: W) -> Result<Self> {
         let mut csv_writer = csv::WriterBuilder::new()
             .quote_style(csv::QuoteStyle::Always)
@@ -20,6 +24,7 @@ impl<W: Write> Output<W> {
         Ok(Self { csv_writer })
     }
 
+    /// Writes both source and destination records for a single transaction.
     pub fn write_transaction(&mut self, t: &Transaction) -> Result<()> {
         let account = t
             .account
@@ -55,6 +60,7 @@ impl<W: Write> Output<W> {
         Ok(())
     }
 
+    /// Flushes the underlying CSV writer.
     pub fn flush(&mut self) -> Result<()> {
         self.csv_writer.flush()?;
         Ok(())

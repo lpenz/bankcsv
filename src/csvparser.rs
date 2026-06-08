@@ -2,20 +2,25 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
+//! Bank CSV file parser.
+
 use crate::transaction::Transaction;
 use chrono::{Datelike, NaiveDate};
 use color_eyre::eyre::{Result, eyre};
 use csv::ReaderBuilder;
 
+/// Parser for bank CSV files.
 pub struct Parser {
     src_account: String,
 }
 
 impl Parser {
+    /// Creates a new Parser for the given source account.
     pub fn new(src_account: String) -> Self {
         Self { src_account }
     }
 
+    /// Parses the given CSV content into an iterator of Transactions.
     pub fn parse_str<'a>(
         &'a self,
         content: &'a str,
@@ -75,6 +80,7 @@ impl Parser {
     }
 }
 
+/// Helper function to parse the transaction value from a CSV record.
 fn value_parse(record: &csv::StringRecord, is_credit: bool) -> String {
     let val = if is_credit {
         record.get(4).unwrap_or("").trim()
