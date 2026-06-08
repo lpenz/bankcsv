@@ -5,11 +5,11 @@
 mod accounts;
 mod cli;
 mod csvparser;
+mod output;
 mod transaction;
 
 use clap::Parser;
 use color_eyre::eyre::Result;
-use csv::WriterBuilder;
 use std::fs::File;
 use std::io::{self, Write};
 
@@ -21,18 +21,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let accounts = accounts::Accounts::from_file(&args.config_file)?;
 
     // Prepare output
-    let mut writer: Box<dyn Write> = if args.output == "-" {
+    let writer: Box<dyn Write> = if args.output == "-" {
         Box::new(io::stdout())
     } else {
         Box::new(File::create(&args.output)?)
     };
 
-    let mut csv_writer = WriterBuilder::new()
-        .quote_style(csv::QuoteStyle::Always)
-        .from_writer(writer.as_mut());
-
-    // Write header
-    csv_writer.write_record(["id", "date", "description", "amount", "value", "account"])?;
+    let mut output = output::Output::new(writer)?;
 
     let parser = csvparser::Parser::new(args.src_account.clone());
 
@@ -48,40 +43,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            if let Some(ref account) = t.account {
-                let date_fmt = t.date.format("%Y-%m-%d").to_string();
-
-                // Add src record
-                csv_writer.write_record([
-                    &t.id,
-                    &date_fmt,
-                    &t.description,
-                    &t.value,
-                    &t.value,
-                    &t.src_account,
-                ])?;
-
-                // Add dst record
-                let dst_value = if t.value.starts_with('-') {
-                    t.value[1..].to_string()
-                } else {
-                    format!("-{}", t.value)
-                };
-
-                csv_writer.write_record([
-                    &t.id,
-                    &date_fmt,
-                    &t.description,
-                    &dst_value,
-                    &dst_value,
-                    account,
-                ])?;
+            if t.account.is_some() {
+                output.write_transaction(&t)?;
             } else {
                 eprintln!("could not assign account to {}", t.description);
             }
         }
     }
 
-    csv_writer.flush()?;
+    output.flush()?;
     Ok(())
 }
