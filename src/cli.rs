@@ -2,7 +2,7 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of this source code package.
 
-//! Command-line interface definition.
+// Command-line interface definition.
 
 use clap::{Parser, ValueHint};
 use std::path::PathBuf;

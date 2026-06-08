@@ -8,14 +8,54 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/lpenz/bankcsv"
 repository = "https://github.com/lpenz/bankcsv"
+build = "build.rs"
 categories = ["command-line-utilities"]
 keywords = ["command-line"]
 
 [dependencies]
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive"] }
 csv = "1.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 regex = "1.5"
 chrono = "0.4"
 color-eyre = "0.6.5"
+
+[build-dependencies]
+clap = { version = "4.6.0", features = ["derive"] }
+clap_complete = "4.6.2"
+clap2man = "0.1.1"
+color-eyre = "0.6.5"
+man = "0.3.0"
+
+[package.metadata.deb]
+section = "utils"
+extended-description = """\
+bankcsv is a command-line tool that converts bank transaction exports
+in CSV format to a format compatible with GnuCash. It allows you to
+define account mapping rules in a JSON file using regular expressions,
+automating the process of assigning accounts to transactions based on
+their descriptions.
+"""
+assets = [
+    ["target/release/bankcsv.1", "usr/share/man/man1/", "644"],
+    ["target/release/bankcsv", "usr/bin/", "755"],
+    ["LICENSE", "usr/share/doc/bankcsv/", "644"],
+    ["AUTHORS", "usr/share/doc/bankcsv/", "644"],
+    ["README.md", "usr/share/doc/bankcsv/", "644"],
+    ["target/release/bankcsv.bash", "/usr/share/bash-completion/completions/", "644"],
+    ["target/release/_bankcsv", "/usr/share/zsh/site-functions/", "644"],
+    ["target/release/bankcsv.fish", "/usr/share/fish/vendor_completions.d/", "644"],
+]
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/bankcsv.1", dest = "/usr/share/man/man1/", mode = "644" },
+    { source = "target/release/bankcsv", dest = "/usr/bin/", mode = "755" },
+    { source = "LICENSE", dest = "/usr/share/doc/bankcsv/", mode = "644" },
+    { source = "AUTHORS", dest = "/usr/share/doc/bankcsv/", mode = "644" },
+    { source = "README.md", dest = "/usr/share/doc/bankcsv/", mode = "644" },
+    { source = "target/release/bankcsv.bash", dest = "/usr/share/bash-completion/completions/", mode = "644" },
+    { source = "target/release/_bankcsv", dest = "/usr/share/zsh/site-functions/", mode = "644" },
+    { source = "target/release/bankcsv.fish", dest = "/usr/share/fish/vendor_completions.d/", mode = "644" },
+]

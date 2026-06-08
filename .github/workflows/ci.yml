@@ -8,10 +8,20 @@ jobs:
     uses: lpenz/ghworkflow-rust/.github/workflows/rust.yml@v0.28.2
     with:
       coveralls: true
+      deb: true
+      rpm: true
+      release_files: |
+        bankcsv bankcsv.1
       publish_cratesio: true
       publish_github_release: true
+      publish_packagecloud_repository_deb: |
+        ["debian/debian/trixie",
+         "ubuntu/ubuntu/noble"]
+      publish_packagecloud_repository_rpm: |
+        ["rpm/rpm_any/rpm_any"]
     secrets:
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
   commit-check:
     runs-on: ubuntu-latest
     steps:
