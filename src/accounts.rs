@@ -12,16 +12,13 @@ use std::path::Path;
 /// Configuration structure for deserializing from JSON.
 #[derive(Debug, Deserialize)]
 struct Config {
-    #[serde(rename = "AccountFromDescription")]
-    account_from_description: Vec<AccountFromDescription>,
+    accounts: Vec<AccountRule>,
 }
 
 /// A single rule mapping a description regex to an account.
 #[derive(Debug, Deserialize)]
-struct AccountFromDescription {
-    #[serde(rename = "Account")]
+struct AccountRule {
     account: String,
-    #[serde(rename = "Regex")]
     regex: String,
 }
 
@@ -43,7 +40,7 @@ impl Accounts {
         let config: Config = serde_json::from_str(content)?;
 
         let mut rules = Vec::new();
-        for rule in config.account_from_description {
+        for rule in config.accounts {
             let re = Regex::new(&rule.regex)?;
             rules.push((re, rule.account));
         }
@@ -58,14 +55,14 @@ mod tests {
     #[test]
     fn test_accounts_from_str() -> Result<()> {
         let content = r#"{
-            "AccountFromDescription": [
+            "accounts": [
                 {
-                    "Account": "Account1",
-                    "Regex": "Regex1"
+                    "account": "Account1",
+                    "regex": "Regex1"
                 },
                 {
-                    "Account": "Account2",
-                    "Regex": "Regex2"
+                    "account": "Account2",
+                    "regex": "Regex2"
                 }
             ]
         }"#;
@@ -88,10 +85,10 @@ mod tests {
     #[test]
     fn test_accounts_from_str_invalid_regex() {
         let content = r#"{
-            "AccountFromDescription": [
+            "accounts": [
                 {
-                    "Account": "Account1",
-                    "Regex": "["
+                    "account": "Account1",
+                    "regex": "["
                 }
             ]
         }"#;

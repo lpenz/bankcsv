@@ -82,8 +82,8 @@ mod tests {
         fs::write(
             &config_file,
             r#"{
-            "AccountFromDescription": [
-                { "Account": "Assets:Checking", "Regex": "MERCHANT 1" }
+            "accounts": [
+                { "account": "Assets:Checking", "regex": "MERCHANT 1" }
             ]
         }"#,
         )?;

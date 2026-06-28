@@ -56,28 +56,28 @@ bankcsv Liabilities:CreditCard config.json statements/*.csv --output gnucash_imp
 
 ## Configuration File Format
 
-The mapping rules are defined in a JSON file containing a list of matching rules under `"AccountFromDescription"`.
+The mapping rules are defined in a JSON file containing a list of matching rules under `"accounts"`.
 
 ### Example `config.json`
 
 ```json
 {
-  "AccountFromDescription": [
+  "accounts": [
     {
-      "Account": "Expenses:Leisure:Entertainment",
-      "Regex": "NETFLIX"
+      "account": "Expenses:Leisure:Entertainment",
+      "regex": "NETFLIX"
     },
     {
-      "Account": "Expenses:Utilities:Electricity",
-      "Regex": "POWER COMPANY .* INC"
+      "account": "Expenses:Utilities:Electricity",
+      "regex": "POWER COMPANY .* INC"
     },
     {
-      "Account": "Expenses:Food:Supermarket",
-      "Regex": "(TESCO|ALDI|LIDL)"
+      "account": "Expenses:Food:Supermarket",
+      "regex": "(TESCO|ALDI|LIDL)"
     },
     {
-      "Account": "Income:Salary",
-      "Regex": "EMPLOYER CO CORP"
+      "account": "Income:Salary",
+      "regex": "EMPLOYER CO CORP"
     }
   ]
 }
