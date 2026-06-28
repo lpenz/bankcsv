@@ -12,6 +12,8 @@ use std::path::Path;
 /// Configuration structure for deserializing from JSON.
 #[derive(Debug, Deserialize)]
 struct Config {
+    #[serde(default)]
+    default: Option<String>,
     accounts: Vec<AccountRule>,
 }
 
@@ -24,6 +26,8 @@ struct AccountRule {
 
 /// Holds the compiled account assignment rules.
 pub struct Accounts {
+    /// Fallback account for unmatched transactions.
+    pub default: Option<String>,
     /// List of compiled regexes and their corresponding accounts.
     pub rules: Vec<(Regex, String)>,
 }
@@ -44,7 +48,10 @@ impl Accounts {
             let re = Regex::new(&rule.regex)?;
             rules.push((re, rule.account));
         }
-        Ok(Self { rules })
+        Ok(Self {
+            default: config.default,
+            rules,
+        })
     }
 }
 
@@ -94,5 +101,24 @@ mod tests {
         }"#;
         let result = Accounts::from_str(content);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_accounts_default_present() -> Result<()> {
+        let content = r#"{
+            "default": "Imbalance-EUR",
+            "accounts": []
+        }"#;
+        let accounts = Accounts::from_str(content)?;
+        assert_eq!(accounts.default, Some("Imbalance-EUR".to_string()));
+        Ok(())
+    }
+
+    #[test]
+    fn test_accounts_default_absent() -> Result<()> {
+        let content = r#"{ "accounts": [] }"#;
+        let accounts = Accounts::from_str(content)?;
+        assert_eq!(accounts.default, None);
+        Ok(())
     }
 }

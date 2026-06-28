@@ -57,6 +57,10 @@ pub fn bankcsv(args: cli::Args) -> Result<()> {
                 output.write_transaction(&t)?;
             } else {
                 eprintln!("could not assign account to {}", t.description);
+                if let Some(default) = &accounts.default {
+                    t.account = Some(default.clone());
+                    output.write_transaction(&t)?;
+                }
             }
         }
     }
