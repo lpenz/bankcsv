@@ -41,15 +41,25 @@ impl Parser {
 
         let mut last_date: Option<NaiveDate> = None;
         let mut counter = 1;
+        let mut row_num = 1;
 
         Ok(records.map(move |result| {
-            let record = result?;
+            row_num += 1;
+            let record =
+                result.map_err(|e| eyre!("failed to read CSV record at row {}: {}", row_num, e))?;
             let offset = if is_credit { 1 } else { 0 };
             let date_str = record
                 .get(1 + offset)
-                .ok_or_else(|| eyre!("missing date field"))?;
+                .ok_or_else(|| eyre!("missing date field at row {}", row_num))?;
 
-            let date = NaiveDate::parse_from_str(date_str, "%d/%m/%Y")?;
+            let date = NaiveDate::parse_from_str(date_str, "%d/%m/%Y").map_err(|e| {
+                eyre!(
+                    "failed to parse date '{}' at row {}: {}",
+                    date_str,
+                    row_num,
+                    e
+                )
+            })?;
 
             if Some(date) != last_date {
                 counter = 1;
@@ -155,5 +165,19 @@ mod tests {
         assert_eq!(transactions[1].value, "-14,649.77");
 
         Ok(())
+    }
+
+    #[test]
+    fn test_parse_invalid_date() {
+        let content = "Posted Account, Posted Transactions Date, Description1, Description2, Description3, Debit Amount, Credit Amount,Balance,Posted Currency,Transaction Type,Local Currency Amount,Local Currency
+\"000000 - 00000000\",\"invalid-date\",\"MERCHANT 2\",\"\",\"\",\"50.00\",,\"20302.92\",EUR,\"Debit\",\" 50.00\",EUR";
+        let parser = Parser::new("test_account".to_string());
+        let res = parser
+            .parse_str(content)
+            .unwrap()
+            .collect::<Result<Vec<_>>>();
+        assert!(res.is_err());
+        let err = res.unwrap_err().to_string();
+        assert!(err.contains("failed to parse date 'invalid-date' at row 2"));
     }
 }
