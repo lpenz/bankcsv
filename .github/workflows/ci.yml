@@ -8,6 +8,7 @@ jobs:
     uses: lpenz/ghworkflow-rust/.github/workflows/rust.yml@v0.28.2
     with:
       coveralls: true
+      enable_cargo-semver-checks: false
       deb: true
       rpm: true
       release_files: |
